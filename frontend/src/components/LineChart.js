@@ -1,230 +1,345 @@
 import React, { useState, useEffect } from 'react';
 
-const MagnitudeFrequencyChart = () => {
-  const [dataPoints, setDataPoints] = useState([
-    { magnitude: 10, frequency: 150 },
-    { magnitude: 15, frequency: 300 },
-    { magnitude: 20, frequency: 500 },
-    { magnitude: 25, frequency: 800 },
-    { magnitude: 30, frequency: 1200 },
-    { magnitude: 35, frequency: 1600 },
-    { magnitude: 40, frequency: 1900 },
-    { magnitude: 45, frequency: 2100 },
-    { magnitude: 0, frequency: 0 }  // Fixed point at origin
-  ]);
+const VibrationChart = () => {
+  const [vibrationData, setVibrationData] = useState({
+    V1: [],
+    V2: [],
+    V3: [],
+    V4: []
+  });
+  const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Function to generate frequency based on magnitude with some randomness
-  const generateFrequencyFromMagnitude = (magnitude) => {
-    if (magnitude === 0) return 0; // Keep origin fixed
-    // Base frequency calculation: higher magnitude = higher frequency
-    const baseFrequency = magnitude * 45; // Scale factor to spread across 0-2300
-    // Add some randomness (±20% variation)
-    const variation = baseFrequency * 0.2 * (Math.random() - 0.5);
-    return Math.max(0, Math.min(2300, Math.floor(baseFrequency + variation)));
+  // Function to fetch data from API
+  const fetchVibrationData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('https://cmti-edge.online/ESP32/TestVibration.php', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setVibrationData({
+          V1: data.data.V1 || [],
+          V2: data.data.V2 || [],
+          V3: data.data.V3 || [],
+          V4: data.data.V4 || []
+        });
+        setLastUpdate(new Date(data.timestamp));
+      } else {
+        throw new Error(data.message || 'Failed to fetch data');
+      }
+    } catch (err) {
+      console.error('Error fetching vibration data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Update data points every 2 seconds
+  // Fetch data every 6 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDataPoints(prevPoints => {
-        const newPoints = prevPoints.map((point, index) => {
-          if (index === prevPoints.length - 1) {
-            // Keep the last point (origin) fixed
-            return { magnitude: 0, frequency: 0 };
-          }
-          
-          // Generate new magnitude (keeping some stability)
-          const baseMagnitude = 5 + index * 5; // Base pattern
-          const variation = 10 * (Math.random() - 0.5); // ±5 variation
-          const newMagnitude = Math.max(0, Math.min(50, Math.floor(baseMagnitude + variation)));
-          
-          // Generate frequency based on magnitude
-          const newFrequency = generateFrequencyFromMagnitude(newMagnitude);
-          
-          return { magnitude: newMagnitude, frequency: newFrequency };
-        });
-        
-        return newPoints;
-      });
-    }, 2000);
-
+    // Fetch immediately on mount
+    fetchVibrationData();
+    
+    // Set up interval for 6 seconds
+    const interval = setInterval(fetchVibrationData, 6000);
+    
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="w-full max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      {/* <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Magnitude vs Frequency Chart</h2>
-        <p className="text-gray-600">Live updating chart showing the relationship between magnitude and frequency. Origin point (0,0) is fixed.</p>
-      </div> */}
+  // Helper function to calculate statistics
+  const calculateStats = (data) => {
+    if (!data || data.length === 0) return { min: 0, max: 0, avg: 0 };
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const avg = data.reduce((sum, val) => sum + val, 0) / data.length;
+    return { min, max, avg };
+  };
+
+  // Colors for each channel
+  const colors = {
+    V1: '#FF6B6B',
+    V2: '#4ECDC4', 
+    V3: '#45B7D1',
+    V4: '#96CEB4'
+  };
+
+  // Individual chart component
+  const ChannelChart = ({ channelName, data, color }) => {
+    const chartWidth = 600;
+    const chartHeight = 250;
+    const padding = { top: 40, right: 40, bottom: 50, left: 60 };
+    const plotWidth = chartWidth - padding.left - padding.right;
+    const plotHeight = chartHeight - padding.top - padding.bottom;
+
+    // Calculate min/max for this channel's Y-axis
+    const yMin = data.length > 0 ? Math.min(...data) : 0;
+    const yMax = data.length > 0 ? Math.max(...data) : 1;
+    const yRange = yMax - yMin;
+    const yPadding = yRange * 0.1; // 10% padding
+
+    const stats = calculateStats(data);
+
+    // Generate path for the line
+    const generatePath = () => {
+      if (!data || data.length === 0) return '';
       
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div style={{ height: '500px' }}>
-          <svg width="100%" height="100%" viewBox="0 0 900 450" className="border rounded">
+      const points = data.map((value, index) => {
+        const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
+        const y = padding.top + plotHeight - ((value - (yMin - yPadding)) / Math.max(yRange + 2 * yPadding, 0.001)) * plotHeight;
+        return `${x},${y}`;
+      });
+      
+      return `M ${points.join(' L ')}`;
+    };
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-4 border">
+        {/* Chart Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></div>
+            <h3 className="text-xl font-bold text-gray-800">{channelName}</h3>
+          </div>
+          <div className="text-sm text-gray-600">
+            {data.length} samples
+          </div>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+          <div className="bg-gray-50 p-2 rounded text-center">
+            <div className="text-gray-600">Min</div>
+            <div className="font-mono font-bold text-blue-600">{stats.min.toFixed(4)}</div>
+          </div>
+          <div className="bg-gray-50 p-2 rounded text-center">
+            <div className="text-gray-600">Max</div>
+            <div className="font-mono font-bold text-red-600">{stats.max.toFixed(4)}</div>
+          </div>
+          <div className="bg-gray-50 p-2 rounded text-center">
+            <div className="text-gray-600">Avg</div>
+            <div className="font-mono font-bold text-green-600">{stats.avg.toFixed(4)}</div>
+          </div>
+        </div>
+
+        {/* Chart */}
+        <div className="bg-gray-50 p-2 rounded">
+          <svg width={chartWidth} height={chartHeight} className="border rounded bg-white">
+            {/* Grid lines */}
             <defs>
-              <linearGradient id="gridGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#f3f3f3" stopOpacity="0.5"/>
-                <stop offset="100%" stopColor="transparent"/>
-              </linearGradient>
+              <pattern id={`grid-${channelName}`} width="30" height="25" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 25" fill="none" stroke="#f3f4f6" strokeWidth="1"/>
+              </pattern>
             </defs>
+            <rect width={chartWidth} height={chartHeight} fill={`url(#grid-${channelName})`} />
             
-            {/* Grid lines - Horizontal (for magnitude) */}
-            {[0, 10, 20, 30, 40, 50].map(value => (
-              <line 
-                key={`h-grid-${value}`}
-                x1="80" 
-                y1={380 - (value / 50) * 320} 
-                x2="820" 
-                y2={380 - (value / 50) * 320} 
-                stroke="#e0e0e0" 
-                strokeWidth="1"
-              />
-            ))}
-            
-            {/* Grid lines - Vertical (for frequency) */}
-            {[0, 500, 1000, 1500, 2000, 2300].map(value => (
-              <line 
-                key={`v-grid-${value}`}
-                x1={80 + (value / 2300) * 740} 
-                y1="60" 
-                x2={80 + (value / 2300) * 740} 
-                y2="380" 
-                stroke="#e0e0e0" 
-                strokeWidth="1"
-              />
-            ))}
-            
-            {/* Y-axis */}
-            <line x1="80" y1="60" x2="80" y2="380" stroke="#333" strokeWidth="2"/>
-            
-            {/* X-axis */}
-            <line x1="80" y1="380" x2="820" y2="380" stroke="#333" strokeWidth="2"/>
-            
-            {/* Y-axis title */}
-            <text x="30" y="220" fill="#333" fontSize="14" fontWeight="bold" textAnchor="middle" transform="rotate(-90, 30, 220)">
-              Magnitude
+            {/* Axes */}
+            <line 
+              x1={padding.left} 
+              y1={padding.top} 
+              x2={padding.left} 
+              y2={chartHeight - padding.bottom} 
+              stroke="#374151" 
+              strokeWidth="2"
+            />
+            <line 
+              x1={padding.left} 
+              y1={chartHeight - padding.bottom} 
+              x2={chartWidth - padding.right} 
+              y2={chartHeight - padding.bottom} 
+              stroke="#374151" 
+              strokeWidth="2"
+            />
+
+            {/* Y-axis labels */}
+            {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
+              const y = padding.top + plotHeight * (1 - ratio);
+              const value = (yMin - yPadding) + ratio * (yRange + 2 * yPadding);
+              return (
+                <g key={ratio}>
+                  <line x1={padding.left - 5} y1={y} x2={padding.left} y2={y} stroke="#6b7280" strokeWidth="1"/>
+                  <text x={padding.left - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#6b7280">
+                    {value.toFixed(3)}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* X-axis labels */}
+            {[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0., 0.8, 0.9, 1, 2,].map(ratio => {
+              const x = padding.left + plotWidth * ratio;
+              const sampleIndex = Math.floor(ratio * Math.max(data.length - 1, 0));
+              return (
+                <g key={ratio}>
+                  <line x1={x} y1={chartHeight - padding.bottom} x2={x} y2={chartHeight - padding.bottom + 5} stroke="#6b7280" strokeWidth="1"/>
+                  <text x={x} y={chartHeight - padding.bottom + 20} textAnchor="middle" fontSize="11" fill="#6b7280">
+                    {sampleIndex}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Axis titles */}
+            <text x={padding.left / 2} y={chartHeight / 2} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold" transform={`rotate(-90, ${padding.left / 2}, ${chartHeight / 2})`}>
+              Amplitude
             </text>
-            
-            {/* X-axis title */}
-            <text x="450" y="430" fill="#333" fontSize="14" fontWeight="bold" textAnchor="middle">
+            <text x={chartWidth / 2} y={chartHeight - 10} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold">
               Frequency
             </text>
-            
-            {/* Chart title */}
-            <text x="450" y="30" fill="#263238" fontSize="18" fontWeight="bold" textAnchor="middle">
-              Magnitude vs Frequency (Auto-updating)
-            </text>
-            
-            {/* Y-axis labels (Magnitude) */}
-            {[0, 10, 20, 30, 40, 50].map(value => (
-              <text 
-                key={`y-label-${value}`}
-                x="70" 
-                y={385 - (value / 50) * 320} 
-                fill="#666" 
-                fontSize="12" 
-                textAnchor="end"
-              >
-                {value}
-              </text>
-            ))}
-            
-            {/* X-axis labels (Frequency) */}
-            {[0, 500, 1000, 1500, 2000, 2300].map(value => (
-              <text 
-                key={`x-label-${value}`}
-                x={80 + (value / 2300) * 740} 
-                y="400" 
-                fill="#666" 
-                fontSize="12" 
-                textAnchor="middle"
-              >
-                {value}
-              </text>
-            ))}
-            
-            {/* Data line connecting points */}
-            <polyline
-              fill="none"
-              stroke="#008FFB"
-              strokeWidth="3"
-              points={
-                dataPoints
-                  .sort((a, b) => a.frequency - b.frequency) // Sort by frequency for proper line connection
-                  .map(point => 
-                    `${80 + (point.frequency / 2300) * 740},${380 - (point.magnitude / 50) * 320}`
-                  ).join(' ')
-              }
-            />
-            
-            {/* Data points */}
-            {dataPoints.map((point, index) => (
-              <circle
-                key={`point-${index}`}
-                cx={80 + (point.frequency / 2300) * 740}
-                cy={380 - (point.magnitude / 50) * 320}
-                r={point.magnitude === 0 && point.frequency === 0 ? "8" : "6"}
-                fill={point.magnitude === 0 && point.frequency === 0 ? "#FF6B6B" : "#008FFB"}
-                stroke="#fff"
-                strokeWidth="2"
-              />
-            ))}
-            
-            {/* Data labels */}
-            {dataPoints.map((point, index) => (
-              <g key={`label-group-${index}`}>
-                <rect
-                  x={75 + (point.frequency / 2300) * 740}
-                  y={375 - (point.magnitude / 50) * 320 - 35}
-                  width="45"
-                  height="30"
-                  textAnchor="middle"
-                  fill={point.magnitude === 0 && point.frequency === 0 ? "#FF6B6B" : "#333"}
-                  rx="3"
-                  opacity="0.9"
+
+            {/* Data line */}
+            {data.length > 0 && (
+              <>
+                {/* Area fill */}
+                <defs>
+                  <linearGradient id={`gradient-${channelName}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.3"/>
+                    <stop offset="100%" stopColor={color} stopOpacity="0.05"/>
+                  </linearGradient>
+                </defs>
+                <path
+                  d={`${generatePath()} L ${padding.left + plotWidth} ${chartHeight - padding.bottom} L ${padding.left} ${chartHeight - padding.bottom} Z`}
+                  fill={`url(#gradient-${channelName})`}
                 />
-                <text
-                  x={97 + (point.frequency / 2300) * 740}
-                  y={370 - (point.magnitude / 50) * 320 - 25}
-                  fill="white"
-                  fontSize="10"
-                  textAnchor="middle"
-                  fontWeight="bold"
-                >
-                  M:{point.magnitude}
-                </text>
-                <text
-                  x={97 + (point.frequency / 2300) * 740}
-                  y={370 - (point.magnitude / 50) * 320 - 15}
-                  fill="white"
-                  fontSize="10"
-                  textAnchor="middle"
-                  fontWeight="bold"
-                >
-                  F:{point.frequency}
-                </text>
-              </g>
-            ))}
+                
+                {/* Line */}
+                <path
+                  d={generatePath()}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+
+                {/* Data points (show every 50th point to avoid clutter) */}
+                {data.map((value, index) => {
+                  if (index % Math.max(Math.floor(data.length / 20), 1) === 0) {
+                    const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
+                    const y = padding.top + plotHeight - ((value - (yMin - yPadding)) / Math.max(yRange + 2 * yPadding, 0.001)) * plotHeight;
+                    return (
+                      <circle
+                        key={index}
+                        cx={x}
+                        cy={y}
+                        r="2"
+                        fill={color}
+                        stroke="white"
+                        strokeWidth="1"
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </>
+            )}
+
+            {/* No data message */}
+            {data.length === 0 && (
+              <text x={chartWidth / 2} y={chartHeight / 2} textAnchor="middle" fontSize="14" fill="#9ca3af">
+                No data available
+              </text>
+            )}
           </svg>
         </div>
       </div>
-      
-      {/* Legend */}
-      {/* <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-600">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-          <span>Data Points</span>
+    );
+  };
+
+  return (
+    <div className="w-full max-w-7xl mx-auto p-6 bg-gray-100 min-h-screen">
+      {/* Header */}
+      <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">4-Channel Vibration Monitoring</h1>
+        <div className="flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
+            <span className="font-medium">{loading ? 'Fetching data...' : 'Connected'}</span>
+          </div>
+          {lastUpdate && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Last Update: {lastUpdate.toLocaleTimeString()}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-gray-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Auto-refresh: 6 seconds</span>
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L5.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="font-medium">Error: {error}</span>
+            </div>
+          )}
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-          <span>Origin (0,0) - Fixed</span>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <ChannelChart 
+          channelName="V1" 
+          data={vibrationData.V1} 
+          color={colors.V1} 
+        />
+        <ChannelChart 
+          channelName="V2" 
+          data={vibrationData.V2} 
+          color={colors.V2} 
+        />
+        <ChannelChart 
+          channelName="V3" 
+          data={vibrationData.V3} 
+          color={colors.V3} 
+        />
+        <ChannelChart 
+          channelName="V4" 
+          data={vibrationData.V4} 
+          color={colors.V4} 
+        />
+      </div>
+
+      {/* Summary Footer */}
+      <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Data Summary</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.keys(colors).map(channel => {
+            const stats = calculateStats(vibrationData[channel]);
+            return (
+              <div key={channel} className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[channel] }}></div>
+                  <span className="font-semibold text-gray-700">{channel}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Range: {(stats.max - stats.min).toFixed(4)}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="text-gray-500">
-          Updates every 2 seconds
-        </div>
-      </div> */}
+      </div>
     </div>
   );
 };
 
-export default MagnitudeFrequencyChart;
+export default VibrationChart;
