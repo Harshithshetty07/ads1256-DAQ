@@ -280,7 +280,7 @@ const VibrationChart = () => {
 
             {/* Axis titles */}
             <text x={padding.left / 2} y={chartHeight / 2} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold" transform={`rotate(-90, ${padding.left / 2}, ${chartHeight / 2})`}>
-              Magnitude
+              Magnitude (g)
             </text>
             <text x={chartWidth / 2} y={chartHeight - 10} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold">
               Frequency (kHz)
