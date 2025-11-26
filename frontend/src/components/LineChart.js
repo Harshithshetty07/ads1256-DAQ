@@ -12,7 +12,7 @@ const VibrationChart = () => {
   const [error, setError] = useState(null);
 
   // FFT Parameters
-  const SAMPLING_FREQ = 30000; // Hz
+  const SAMPLING_FREQ = 127900; // Hz
   const FFT_SIZE = 4096;
   const FFT_MAGNITUDE = 2048;
 
