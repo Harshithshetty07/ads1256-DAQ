@@ -12,7 +12,7 @@ const VibrationChart = () => {
   const [error, setError] = useState(null);
 
   // FFT Parameters
-  const SAMPLING_FREQ = 127900; // Hz
+  const SAMPLING_FREQ = 127940; // Hz
   const FFT_SIZE = 4096;
   const FFT_MAGNITUDE = 2048;
 
@@ -57,7 +57,7 @@ const VibrationChart = () => {
   // Fetch data every 6 seconds
   useEffect(() => {
     fetchVibrationData();
-    const interval = setInterval(fetchVibrationData, 6000);
+    const interval = setInterval(fetchVibrationData, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -389,7 +389,7 @@ const VibrationChart = () => {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>Auto-refresh: 6 seconds</span>
+            <span>Auto-refresh: 4 seconds</span>
           </div>
           {error && (
             <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded">
