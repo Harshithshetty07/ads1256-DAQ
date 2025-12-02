@@ -54,7 +54,7 @@ const VibrationChart = () => {
     }
   };
 
-  // Fetch data every 6 seconds
+  // Fetch data every 4 seconds
   useEffect(() => {
     fetchVibrationData();
     const interval = setInterval(fetchVibrationData, 4000);
@@ -140,7 +140,9 @@ const VibrationChart = () => {
             peaks.map((peak, index) => (
               <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
                 <div>
-                  <span className="font-mono text-blue-600">{peak.frequency.toFixed(1)} Hz</span>
+                  <span className="font-mono text-blue-600">
+                    {peak.frequency >= 1000 ? `${(peak.frequency/1000).toFixed(2)} kHz` : `${peak.frequency.toFixed(1)} Hz`}
+                  </span>
                 </div>
                 <div>
                   <span className="font-mono text-red-600">{peak.magnitude.toFixed(4)}</span>
@@ -157,14 +159,14 @@ const VibrationChart = () => {
 
   // Individual chart component
   const ChannelChart = ({ channelName, data, color }) => {
-    const chartWidth = 700;
-    const chartHeight = 300;
-    const padding = { top: 40, right: 40, bottom: 60, left: 80 };
+    const chartWidth = 1000;
+    const chartHeight = 400;
+    const padding = { top: 40, right: 40, bottom: 80, left: 80 };
     const plotWidth = chartWidth - padding.left - padding.right;
     const plotHeight = chartHeight - padding.top - padding.bottom;
 
-    // Calculate frequency range for X-axis
-    const maxFreq = SAMPLING_FREQ / 2; // Nyquist frequency
+    // Set maximum frequency to 60kHz for x-axis display
+    const maxFreq = 60000; // 60kHz
     const freqStep = maxFreq / Math.max(data.length - 1, 1);
 
     // Calculate min/max for Y-axis (magnitude)
@@ -174,16 +176,19 @@ const VibrationChart = () => {
 
     const stats = calculateStats(data);
 
-    // Generate path for the line
+    // Generate path for the line with proper frequency scaling
     const generatePath = () => {
       if (!data || data.length === 0) return '';
       
       const points = data.map((magnitude, index) => {
         const frequency = binToFrequency(index);
+        // Only plot points within our display range (0 to 60kHz)
+        if (frequency > maxFreq) return null;
+        
         const x = padding.left + (frequency / maxFreq) * plotWidth;
         const y = padding.top + plotHeight - ((magnitude - yMin) / Math.max(yRange, 0.001)) * plotHeight;
         return `${x},${y}`;
-      });
+      }).filter(point => point !== null);
       
       return `M ${points.join(' L ')}`;
     };
@@ -196,9 +201,6 @@ const VibrationChart = () => {
             <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></div>
             <h3 className="text-xl font-bold text-gray-800">{channelName} - FFT Magnitude</h3>
           </div>
-          {/* <div className="text-sm text-gray-600">
-            {data.length} bins
-          </div> */}
         </div>
 
         {/* Statistics */}
@@ -207,14 +209,6 @@ const VibrationChart = () => {
             <div className="text-gray-600">Max Mag</div>
             <div className="font-mono font-bold text-red-600">{stats.max.toFixed(4)}</div>
           </div>
-          {/* <div className="bg-gray-50 p-2 rounded text-center">
-            <div className="text-gray-600">Avg Mag</div>
-            <div className="font-mono font-bold text-green-600">{stats.avg.toFixed(4)}</div>
-          </div> */}
-          {/* <div className="bg-gray-50 p-2 rounded text-center">
-            <div className="text-gray-600">RMS</div>
-            <div className="font-mono font-bold text-purple-600">{stats.rms.toFixed(4)}</div>
-          </div> */}
           <div className="bg-gray-50 p-2 rounded text-center">
             <div className="text-gray-600">Peaks</div>
             <div className="font-mono font-bold text-orange-600">{stats.peaks.length}</div>
@@ -256,34 +250,41 @@ const VibrationChart = () => {
               const value = yMin + ratio * yRange;
               return (
                 <g key={ratio}>
-                  <line x1={padding.left - 5} y1={y} x2={padding.left} y2={y} stroke="#6b7280" strokeWidth="1"/>
-                  <text x={padding.left - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#6b7280">
+                  <line x1={padding.left - 8} y1={y} x2={padding.left} y2={y} stroke="#6b7280" strokeWidth="1.5"/>
+                  <text x={padding.left - 12} y={y + 5} textAnchor="end" fontSize="12" fill="#374151">
                     {value.toFixed(3)}
                   </text>
                 </g>
               );
             })}
 
-            {/* X-axis labels (Frequency) */}
-            {[0, 0.2, 0.4, 0.6, 0.8, 1.0].map(ratio => {
+            {/* X-axis labels (Frequency) - Equally distributed */}
+            {[ 200, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000].map((frequency, idx) => {
+              const ratio = frequency / maxFreq;
               const x = padding.left + plotWidth * ratio;
-              const frequency = ratio * maxFreq;
               return (
-                <g key={ratio}>
-                  <line x1={x} y1={chartHeight - padding.bottom} x2={x} y2={chartHeight - padding.bottom + 5} stroke="#6b7280" strokeWidth="1"/>
-                  <text x={x} y={chartHeight - padding.bottom + 20} textAnchor="middle" fontSize="11" fill="#6b7280">
-                    {(frequency / 1000).toFixed(1)}k
+                <g key={frequency}>
+                  <line x1={x} y1={chartHeight - padding.bottom} x2={x} y2={chartHeight - padding.bottom + 8} stroke="#6b7280" strokeWidth="1.5"/>
+                  <text 
+                    x={x} 
+                    y={chartHeight - padding.bottom + 25} 
+                    textAnchor="middle" 
+                    fontSize="12" 
+                    fill="#374151"
+                    fontWeight="normal"
+                  >
+                    {frequency >= 1000 ? `${(frequency / 1000).toFixed(0)}k` : frequency}
                   </text>
                 </g>
               );
             })}
 
             {/* Axis titles */}
-            <text x={padding.left / 2} y={chartHeight / 2} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold" transform={`rotate(-90, ${padding.left / 2}, ${chartHeight / 2})`}>
+            <text x={padding.left / 2} y={chartHeight / 2} textAnchor="middle" fontSize="14" fill="#374151" fontWeight="bold" transform={`rotate(-90, ${padding.left / 2}, ${chartHeight / 2})`}>
               Magnitude (g)
             </text>
-            <text x={chartWidth / 2} y={chartHeight - 10} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold">
-              Frequency (kHz)
+            <text x={chartWidth / 2} y={chartHeight - 15} textAnchor="middle" fontSize="14" fill="#374151" fontWeight="bold">
+              Frequency (Hz) - Range: 0 to 60kHz
             </text>
 
             {/* Data line */}
@@ -311,8 +312,8 @@ const VibrationChart = () => {
                   strokeLinecap="round"
                 />
 
-                {/* Peak markers */}
-                {stats.peaks.map((peak, index) => {
+                {/* Peak markers - only show peaks within display range */}
+                {stats.peaks.filter(peak => peak.frequency <= maxFreq).map((peak, index) => {
                   const x = padding.left + (peak.frequency / maxFreq) * plotWidth;
                   const y = padding.top + plotHeight - ((peak.magnitude - yMin) / Math.max(yRange, 0.001)) * plotHeight;
                   return (
@@ -333,7 +334,7 @@ const VibrationChart = () => {
                         fill="#ff4444"
                         fontWeight="bold"
                       >
-                        {peak.frequency.toFixed(1)}Hz
+                        {peak.frequency >= 1000 ? `${(peak.frequency/1000).toFixed(1)}kHz` : `${peak.frequency.toFixed(0)}Hz`}
                       </text>
                     </g>
                   );
@@ -368,8 +369,8 @@ const VibrationChart = () => {
             <div className="text-lg font-mono text-green-600">{FFT_SIZE.toLocaleString()}</div>
           </div>
           <div className="bg-purple-50 p-3 rounded-lg">
-            <div className="font-semibold text-purple-800">Frequency Resolution</div>
-            <div className="text-lg font-mono text-purple-600">{(SAMPLING_FREQ / FFT_SIZE).toFixed(2)} Hz/bin</div>
+            <div className="font-semibold text-purple-800">Display Range</div>
+            <div className="text-lg font-mono text-purple-600">0 - 60 kHz</div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-6 text-sm">
@@ -430,7 +431,7 @@ const VibrationChart = () => {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <ChannelChart 
           channelName="Channel 1" 
           data={vibrationData.Channel1} 
@@ -468,12 +469,6 @@ const VibrationChart = () => {
                 </div>
                 <div className="text-sm text-gray-600 space-y-1">
                   <div>Max: {stats.max.toFixed(4)}</div>
-                  {/* <div>RMS: {stats.rms.toFixed(4)}</div>
-                  {dominantPeak && (
-                    <div className="font-semibold text-blue-600">
-                      Peak: {dominantPeak.frequency.toFixed(1)} Hz
-                    </div>
-                  )} */}
                 </div>
               </div>
             );
