@@ -159,7 +159,7 @@ const VibrationChart = () => {
 
   // Individual chart component
   const ChannelChart = ({ channelName, data, color }) => {
-    const chartWidth = 1000;
+    const chartWidth = 1800;
     const chartHeight = 400;
     const padding = { top: 40, right: 40, bottom: 80, left: 80 };
     const plotWidth = chartWidth - padding.left - padding.right;
@@ -259,7 +259,7 @@ const VibrationChart = () => {
             })}
 
             {/* X-axis labels (Frequency) - Equally distributed */}
-            {[ 200, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000].map((frequency, idx) => {
+            {[0, 156, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000].map((frequency, idx) => {
               const ratio = frequency / maxFreq;
               const x = padding.left + plotWidth * ratio;
               return (
