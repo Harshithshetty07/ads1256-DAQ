@@ -226,6 +226,7 @@ const VibrationChart = () => {
             </defs>
             <rect width={chartWidth} height={chartHeight} fill={`url(#grid-${channelName})`} />
             
+            
             {/* Axes */}
             <line 
               x1={padding.left} 
