@@ -1,10 +1,10 @@
 import './App.css';
-import LineChart from './components/LineChart';
+import VibrationDashboard from './components/VibrationDashboard';
 
 function App() {
   return (
     <div className="App">
-     <LineChart />
+     <VibrationDashboard />
     </div>
   );
 }
