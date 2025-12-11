@@ -185,6 +185,7 @@ const VibrationDashboard = () => {
               </div>
             </div>
             
+            
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 lg:gap-6 text-xs sm:text-sm">
               <div className="flex items-center gap-2 bg-slate-800 bg-opacity-80 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-slate-700">
                 <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${loading ? 'bg-yellow-400 animate-ping' : 'bg-emerald-400'}`}></div>
