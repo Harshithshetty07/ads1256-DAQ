@@ -147,6 +147,8 @@ const VibrationDashboard = () => {
     );
   };
 
+
+  
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-2 sm:p-4 lg:p-6">
       <div className="max-w-[2000px] mx-auto">
