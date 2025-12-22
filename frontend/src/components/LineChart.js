@@ -227,9 +227,9 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
           })}
 
           {/* X-axis tick marks and labels */}
-          {[0, 10000, 20000, 30000, 40000, 50000, 60000].map(frequency => {
+          {[0, 1000, 2000, 3000, 4000, 5000, 16000].map(frequency => {
             const ratio = frequency / maxFreq;
-            const x = 60 + 1100 * ratio;
+            const x = 60 + 11000 * ratio;
             return (
               <g key={frequency}>
                 <line x1={x} y1="280" x2={x} y2="285" stroke="#64748b" strokeWidth="1.5"/>
