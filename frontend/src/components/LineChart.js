@@ -226,6 +226,7 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
             );
           })}
 
+
           {/* X-axis tick marks and labels */}
           {[0, 1000, 2000, 3000, 4000, 5000, 16000].map(frequency => {
             const ratio = frequency / maxFreq;
