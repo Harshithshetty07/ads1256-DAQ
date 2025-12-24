@@ -209,6 +209,7 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
             Frequency kHz
           </text>
 
+
           {/* Y-axis tick marks and labels */}
           {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
             const yMin = 0;
