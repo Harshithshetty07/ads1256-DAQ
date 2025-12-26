@@ -181,7 +181,7 @@ const VibrationDashboard = () => {
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                   <div className="font-bold text-slate-300 text-base">Display Range</div>
                 </div>
-                <div className="text-base sm:text-lg lg:text-xl font-mono font-bold text-purple-400">0 - 60 kHz</div>
+                <div className="text-base sm:text-lg lg:text-xl font-mono font-bold text-purple-400">0 - 8 kHz</div>
               </div>
             </div>
           
@@ -190,12 +190,6 @@ const VibrationDashboard = () => {
                 <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${loading ? 'bg-yellow-400 animate-ping' : 'bg-emerald-400'}`}></div>
                 <span className="font-medium text-slate-200">{loading ? 'Updating...' : 'Live'}</span>
               </div>
-              {/* {lastUpdate && (
-                <div className="flex items-center gap-2 text-slate-300 bg-slate-800 bg-opacity-60 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-slate-700">
-                  <span className="hidden sm:inline">Last Update:</span>
-                  <span className="font-mono">{lastUpdate.toLocaleTimeString()}</span>
-                </div>
-              )} */}
               {error && (
                 <div className="flex items-center gap-2 text-red-200 bg-red-900 bg-opacity-50 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-red-700">
                   <span className="font-medium">⚠ {error}</span>

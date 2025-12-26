@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity } from 'lucide-react';
 
 const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
-  const maxFreq = 60000;
+  const maxFreq = 8000;
 
   const binToFrequency = (binIndex) => {
     return (binIndex * samplingFreq) / fftSize;
@@ -174,7 +174,7 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
                       fill="#f8fafc" 
                       fontWeight="bold"
                     >
-                      {peak.frequency >= 1000 ? `${(peak.frequency/1000).toFixed(1)}kHz` : `${peak.frequency.toFixed(0)}Hz`}
+                      {peak.frequency >= 1000 ? `${(peak.frequency/1000).toFixed(1)}k` : `${peak.frequency.toFixed(0)}`}
                     </text>
                   </g>
                 );
@@ -199,16 +199,15 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
             Magnitude (g)
           </text>
           <text 
-            x="610" 
-            y="300" 
-            textAnchor="middle" 
-            fontSize="10" 
+            x="630" 
+            y="295" 
+            textAnchor="inherit" 
+            fontSize="11" 
             fill="#cbd5e1" 
             fontWeight="bold"
           >
-            Frequency kHz
+            Frequency (Hz)
           </text>
-
 
           {/* Y-axis tick marks and labels */}
           {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
@@ -227,11 +226,10 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
             );
           })}
 
-
-          {/* X-axis tick marks and labels */}
-          {[0, 1000, 2000, 3000, 4000, 5000, 16000].map(frequency => {
+          {/* X-axis tick marks and labels - 0, 100, 200, 400, 600, 800, 1k, 2k, 3k, 4k, 5k, 6k, 7k, 8k */}
+          {[0, 200, 400, 600, 800, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000].map(frequency => {
             const ratio = frequency / maxFreq;
-            const x = 60 + 11000 * ratio;
+            const x = 60 + 1100 * ratio;
             return (
               <g key={frequency}>
                 <line x1={x} y1="280" x2={x} y2="285" stroke="#64748b" strokeWidth="1.5"/>
@@ -242,7 +240,7 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
                   fontSize="10" 
                   fill="#94a3b8"
                 >
-                  {frequency >= 1000 ? `${(frequency / 1000).toFixed(0)}k` : frequency}
+                  {frequency >= 1000 ? `${(frequency / 1000)}k` : frequency}
                 </text>
               </g>
             );
