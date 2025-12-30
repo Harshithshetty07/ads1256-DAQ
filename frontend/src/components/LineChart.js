@@ -25,8 +25,6 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
           break;
         }
       }
-      
-      
       if (isPeak) {
         peaks.push({
           binIndex: i,
