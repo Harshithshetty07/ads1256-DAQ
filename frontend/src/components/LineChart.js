@@ -12,8 +12,6 @@ const ChannelChart = ({ channelName, data, color, samplingFreq, fftSize }) => {
     if (!magnitudeData || magnitudeData.length === 0) return [];
     
     const peaks = [];
-    
-    
     for (let i = minDistance; i < magnitudeData.length - minDistance; i++) {
       const current = magnitudeData[i];
       
