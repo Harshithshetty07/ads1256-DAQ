@@ -55,6 +55,7 @@ const VibrationDashboard = () => {
     }
   };
 
+  
   useEffect(() => {
     fetchVibrationData();
     const interval = setInterval(fetchVibrationData, 4000);
