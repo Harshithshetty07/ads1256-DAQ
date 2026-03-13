@@ -14,7 +14,7 @@ const VibrationDashboard = () => {
   const [error, setError] = useState(null);
 
   // FFT Parameters
-  const SAMPLING_FREQ = 16000;
+  const SAMPLING_FREQ = 30000;
   const FFT_SIZE = 4096;
   const FFT_MAGNITUDE = 2048;
 
@@ -66,7 +66,7 @@ const VibrationDashboard = () => {
     return (binIndex * SAMPLING_FREQ) / FFT_SIZE;
   };
 
-  const findPeaks = (magnitudeData, minHeight = 0.1, minDistance = 5) => {
+  const findPeaks = (magnitudeData, minHeight = 0.001, minDistance = 5) => {
     if (!magnitudeData || magnitudeData.length === 0) return [];
     
     const peaks = [];
