@@ -14,7 +14,7 @@ const VibrationDashboard = () => {
   const [error, setError] = useState(null);
 
   // FFT Parameters
-  const SAMPLING_FREQ = 30000;
+  const SAMPLING_FREQ = 16000;
   const FFT_SIZE = 4096;
   const FFT_MAGNITUDE = 2048;
 
